@@ -1,5 +1,6 @@
 use async_trait::async_trait;
 use std::marker::PhantomData;
+#[cfg(not(feature = "wasm"))]
 use tokio::task::JoinHandle;
 
 use crate::{
@@ -9,6 +10,35 @@ use crate::{
 
 mod worker;
 use worker::{Address, Dispatch, Select, StateWorker, Subscribe};
+
+
+#[cfg(feature = "wasm")]
+fn spawn_worker<State, Action, RootReducer>(
+    mut worker: StateWorker<State, Action, RootReducer>
+)
+where
+    Action: Send + 'static,
+    RootReducer: Reducer<State, Action> + Send + 'static,
+    State: Send + 'static,
+{
+    wasm_bindgen_futures::spawn_local(async move {
+        worker.run().await;
+    });
+}
+
+#[cfg(not(feature = "wasm"))]
+fn spawn_worker<State, Action, RootReducer>(
+    mut worker: StateWorker<State, Action, RootReducer>
+) -> JoinHandle<()> 
+where
+    Action: Send + 'static,
+    RootReducer: Reducer<State, Action> + Send + 'static,
+    State: Send + 'static,
+{
+    tokio::spawn(async move {
+        worker.run().await;
+    })
+}
 
 /// The store is the heart of any redux application, it contains the state of the application.
 ///
@@ -21,6 +51,7 @@ where
     RootReducer: Send,
 {
     worker_address: Address<State, Action, RootReducer>,
+    #[cfg(not(feature = "wasm"))]
     _worker_handle: JoinHandle<()>,
 
     _types: PhantomData<RootReducer>,
@@ -42,15 +73,14 @@ where
 
     /// Create a new store with the given root reducer and the provided state
     pub fn new_with_state(root_reducer: RootReducer, state: State) -> Self {
-        let mut worker = StateWorker::new(root_reducer, state);
+        let worker = StateWorker::new(root_reducer, state);
         let worker_address = worker.address();
 
-        let _worker_handle = tokio::spawn(async move {
-            worker.run().await;
-        });
+        let _worker_handle = spawn_worker(worker);
 
         Store {
             worker_address,
+            #[cfg(not(feature = "wasm"))]
             _worker_handle,
 
             _types: Default::default(),
@@ -134,6 +164,7 @@ where
     }
 }
 
+#[cfg(not(feature = "wasm"))]
 #[cfg(test)]
 mod tests {
     use super::*;

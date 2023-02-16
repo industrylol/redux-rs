@@ -1,119 +1,123 @@
-use redux_rs::{Selector, Store};
+#[cfg(not(feature = "wasm"))]
+#[cfg(test)]
+mod tests {
+    use redux_rs::{Selector, Store};
 
-struct Counter(i8);
+    struct Counter(i8);
 
-enum Action {
-    Increment,
-    Decrement,
-}
-
-fn reducer(state: Counter, action: Action) -> Counter {
-    let current_value = state.0;
-
-    match action {
-        Action::Increment => Counter(current_value + 1),
-        Action::Decrement => Counter(current_value - 1),
+    enum Action {
+        Increment,
+        Decrement,
     }
-}
 
-fn value_selector(store: &Counter) -> i8 {
-    store.0
-}
+    fn reducer(state: Counter, action: Action) -> Counter {
+        let current_value = state.0;
 
-struct ValueSelector;
-impl Selector<Counter> for ValueSelector {
-    type Result = i8;
-
-    fn select(&self, state: &Counter) -> Self::Result {
-        state.0
+        match action {
+            Action::Increment => Counter(current_value + 1),
+            Action::Decrement => Counter(current_value - 1),
+        }
     }
-}
 
-#[tokio::test]
-async fn fn_selector() {
-    // Create a new store with default value 42
-    let store = Store::new_with_state(reducer, Counter(42));
+    fn value_selector(store: &Counter) -> i8 {
+        store.0
+    }
 
-    // Verify that the current value is 42
-    assert_eq!(store.select(value_selector).await, 42);
+    struct ValueSelector;
+    impl Selector<Counter> for ValueSelector {
+        type Result = i8;
 
-    // Dispatch an increment action, the new value should be 43
-    store.dispatch(Action::Increment).await;
-    assert_eq!(store.select(value_selector).await, 43);
+        fn select(&self, state: &Counter) -> Self::Result {
+            state.0
+        }
+    }
 
-    // Dispatch another increment action, the new value should be 44
-    store.dispatch(Action::Increment).await;
-    assert_eq!(store.select(value_selector).await, 44);
+    #[tokio::test]
+    async fn fn_selector() {
+        // Create a new store with default value 42
+        let store = Store::new_with_state(reducer, Counter(42));
 
-    // Dispatch a decrement action, the new value should be 43
-    store.dispatch(Action::Decrement).await;
-    assert_eq!(store.select(value_selector).await, 43);
-}
+        // Verify that the current value is 42
+        assert_eq!(store.select(value_selector).await, 42);
 
-#[tokio::test]
-async fn closure_selector() {
-    // Create a new store with default value 42
-    let store = Store::new_with_state(reducer, Counter(42));
+        // Dispatch an increment action, the new value should be 43
+        store.dispatch(Action::Increment).await;
+        assert_eq!(store.select(value_selector).await, 43);
 
-    let closure_selector = |counter: &Counter| counter.0;
+        // Dispatch another increment action, the new value should be 44
+        store.dispatch(Action::Increment).await;
+        assert_eq!(store.select(value_selector).await, 44);
 
-    // Verify that the current value is 42
-    assert_eq!(store.select(closure_selector).await, 42);
+        // Dispatch a decrement action, the new value should be 43
+        store.dispatch(Action::Decrement).await;
+        assert_eq!(store.select(value_selector).await, 43);
+    }
 
-    // Dispatch an increment action, the new value should be 43
-    store.dispatch(Action::Increment).await;
-    assert_eq!(store.select(closure_selector).await, 43);
+    #[tokio::test]
+    async fn closure_selector() {
+        // Create a new store with default value 42
+        let store = Store::new_with_state(reducer, Counter(42));
 
-    // Dispatch another increment action, the new value should be 44
-    store.dispatch(Action::Increment).await;
-    assert_eq!(store.select(closure_selector).await, 44);
+        let closure_selector = |counter: &Counter| counter.0;
 
-    // Dispatch a decrement action, the new value should be 43
-    store.dispatch(Action::Decrement).await;
-    assert_eq!(store.select(closure_selector).await, 43);
-}
+        // Verify that the current value is 42
+        assert_eq!(store.select(closure_selector).await, 42);
 
-#[tokio::test]
-async fn trait_selector() {
-    // Create a new store with default value 42
-    let store = Store::new_with_state(reducer, Counter(42));
+        // Dispatch an increment action, the new value should be 43
+        store.dispatch(Action::Increment).await;
+        assert_eq!(store.select(closure_selector).await, 43);
 
-    // Verify that the current value is 42
-    assert_eq!(store.select(ValueSelector).await, 42);
+        // Dispatch another increment action, the new value should be 44
+        store.dispatch(Action::Increment).await;
+        assert_eq!(store.select(closure_selector).await, 44);
 
-    // Dispatch an increment action, the new value should be 43
-    store.dispatch(Action::Increment).await;
-    assert_eq!(store.select(ValueSelector).await, 43);
+        // Dispatch a decrement action, the new value should be 43
+        store.dispatch(Action::Decrement).await;
+        assert_eq!(store.select(closure_selector).await, 43);
+    }
 
-    // Dispatch another increment action, the new value should be 44
-    store.dispatch(Action::Increment).await;
-    assert_eq!(store.select(ValueSelector).await, 44);
+    #[tokio::test]
+    async fn trait_selector() {
+        // Create a new store with default value 42
+        let store = Store::new_with_state(reducer, Counter(42));
 
-    // Dispatch a decrement action, the new value should be 43
-    store.dispatch(Action::Decrement).await;
-    assert_eq!(store.select(ValueSelector).await, 43);
-}
+        // Verify that the current value is 42
+        assert_eq!(store.select(ValueSelector).await, 42);
 
-#[tokio::test]
-async fn subscribe_to_updates() {
-    // Create a new store with default value 42
-    let store = Store::new_with_state(reducer, Counter(42));
+        // Dispatch an increment action, the new value should be 43
+        store.dispatch(Action::Increment).await;
+        assert_eq!(store.select(ValueSelector).await, 43);
 
-    // Subscribe to every update and print the value
-    store.subscribe(|store: &Counter| println!("New store value: {}", store.0)).await;
+        // Dispatch another increment action, the new value should be 44
+        store.dispatch(Action::Increment).await;
+        assert_eq!(store.select(ValueSelector).await, 44);
 
-    // Verify that the current value is 42
-    assert_eq!(store.select(ValueSelector).await, 42);
+        // Dispatch a decrement action, the new value should be 43
+        store.dispatch(Action::Decrement).await;
+        assert_eq!(store.select(ValueSelector).await, 43);
+    }
 
-    // Dispatch an increment action, the new value should be 43
-    store.dispatch(Action::Increment).await;
-    assert_eq!(store.select(ValueSelector).await, 43);
+    #[tokio::test]
+    async fn subscribe_to_updates() {
+        // Create a new store with default value 42
+        let store = Store::new_with_state(reducer, Counter(42));
 
-    // Dispatch another increment action, the new value should be 44
-    store.dispatch(Action::Increment).await;
-    assert_eq!(store.select(ValueSelector).await, 44);
+        // Subscribe to every update and print the value
+        store.subscribe(|store: &Counter| println!("New store value: {}", store.0)).await;
 
-    // Dispatch a decrement action, the new value should be 43
-    store.dispatch(Action::Decrement).await;
-    assert_eq!(store.select(ValueSelector).await, 43);
+        // Verify that the current value is 42
+        assert_eq!(store.select(ValueSelector).await, 42);
+
+        // Dispatch an increment action, the new value should be 43
+        store.dispatch(Action::Increment).await;
+        assert_eq!(store.select(ValueSelector).await, 43);
+
+        // Dispatch another increment action, the new value should be 44
+        store.dispatch(Action::Increment).await;
+        assert_eq!(store.select(ValueSelector).await, 44);
+
+        // Dispatch a decrement action, the new value should be 43
+        store.dispatch(Action::Decrement).await;
+        assert_eq!(store.select(ValueSelector).await, 43);
+    }
 }

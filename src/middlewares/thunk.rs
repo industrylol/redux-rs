@@ -183,6 +183,11 @@ where
             ActionOrThunk::Thunk(thunk) => {
                 let api = inner.to_owned();
 
+                #[cfg(feature = "wasm")]
+                wasm_bindgen_futures::spawn_local(async move {
+                    thunk.execute(api).await;
+                });
+                #[cfg(not(feature = "wasm"))]
                 tokio::spawn(async move {
                     thunk.execute(api).await;
                 });

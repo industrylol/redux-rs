@@ -81,6 +81,7 @@ impl Selector<State> for SelectNumberCompletedTodos {
     }
 }
 
+#[cfg(not(feature = "wasm"))]
 #[tokio::main]
 async fn main() {
     let store = Store::new(reducer);
@@ -111,4 +112,36 @@ async fn main() {
             filter: VisibilityFilter::ShowAll,
         })
         .await;
+}
+
+#[cfg(feature = "wasm")]
+fn main() {
+    // let store = Store::new(reducer);
+    // store.subscribe(|state: &State| println!("New state: {:?}", state)).await;
+
+    // // Print number of completed tasks
+    // println!("Number of completed tasks: {}", store.select(SelectNumberCompletedTodos).await);
+
+    // // { type: 'ADD_TODO', text: 'Go to swimming pool' }
+    // store
+    //     .dispatch(Action::AddTodo {
+    //         text: "Go to swimming pool".to_string(),
+    //     })
+    //     .await;
+
+    // // Print number of completed tasks
+    // println!("Number of completed tasks: {}", store.select(SelectNumberCompletedTodos).await);
+
+    // // { type: 'TOGGLE_TODO', index: 0 }
+    // store.dispatch(Action::ToggleTodo { index: 0 }).await;
+
+    // // Print number of completed tasks
+    // println!("Number of completed tasks: {}", store.select(SelectNumberCompletedTodos).await);
+
+    // // { type: 'SET_VISIBILITY_FILTER', filter: 'SHOW_ALL' }
+    // store
+    //     .dispatch(Action::SetVisibilityFilter {
+    //         filter: VisibilityFilter::ShowAll,
+    //     })
+    //     .await;
 }

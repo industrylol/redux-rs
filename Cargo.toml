@@ -7,7 +7,8 @@ license = "MIT"
 homepage = "https://github.com/redux-rs/redux-rs"
 repository = "https://github.com/redux-rs/redux-rs.git"
 readme = "README.md"
-edition = "2018"
+edition = "2021"
+resolver = "2"
 
 [package.metadata.docs.rs]
 all-features = true
@@ -17,14 +18,17 @@ async-trait = "0.1.52"
 env_logger = { version = "0.10.0", optional = true }
 log = { version = "0.4", optional = true }
 tokio = { version = "1", features = [ "sync", "rt" ] }
+wasm-bindgen-futures = { version = "0.4.33", optional = true }
 
-[dev-dependencies]
-tokio = { version = "1", features = [ "sync", "rt", "rt-multi-thread", "time", "macros" ] }
+[target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies.tokio]
+version = "1" 
+features = [ "sync", "rt", "rt-multi-thread", "time", "macros" ]
 
 [features]
 default = []
 middleware_logger = [ "log" ]
 middleware_thunk = []
+wasm = ["dep:wasm-bindgen-futures"]
 example_logger_middleware_dependencies = [ "middleware_logger", "env_logger" ]
 example_thunk_middleware_dependencies = [ "middleware_thunk" ]
 
